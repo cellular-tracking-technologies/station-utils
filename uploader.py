@@ -95,7 +95,7 @@ class StationUploader:
         filenames = glob.glob(os.path.join(self.rotated_dir, '*'))
         logging.info('about to upload {} CTT data files'.format(len(filenames)))
         if self.checkInternetStatus() is True:
-            for filename in filenames:
+            for filename in sorted(filenames):
                 res = self.uploadFile(fileuri=filename, filetype='ctt')
                 if res is False:
                     # if we cannot upload a file - don't upload the rest
@@ -112,7 +112,7 @@ class StationUploader:
         logging.info('about to upload {} SG files'.format(len(filenames)))
         now = datetime.datetime.utcnow()
         if self.checkInternetStatus() is True:
-            for filename in filenames:
+            for filename in sorted(filenames):
 
                 delta = (time.time() - os.stat(filename).st_mtime) / 60.0 # minutes since last modified
                 if delta  > 61:
