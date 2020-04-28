@@ -92,8 +92,8 @@ class StationUploader:
         shutil.move(fileuri, newuri)
 
     def uploadAllCttFiles(self):
-        logging.info('about to upload CTT data files')
         filenames = glob.glob(os.path.join(self.rotated_dir, '*'))
+        logging.info('about to upload {} CTT data files'.format(len(filenames)))
         if self.checkInternetStatus() is True:
             for filename in filenames:
                 res = self.uploadFile(fileuri=filename, filetype='ctt')
@@ -108,8 +108,8 @@ class StationUploader:
         return False
 
     def uploadAllSgFiles(self):
-        logging.info('about to upload SG files')
         filenames = glob.glob(os.path.join(self.sg_file_dir, '*', '*.gz'))
+        logging.info('about to upload {} SG files'.format(len(filenames)))
         now = datetime.datetime.utcnow()
         if self.checkInternetStatus() is True:
             for filename in filenames:
