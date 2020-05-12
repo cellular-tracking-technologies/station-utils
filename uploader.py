@@ -1,22 +1,18 @@
 #!/home/pi/ctt/.envs/station/bin/python3 
 import datetime
 import time
-import boto3
 import json
 import glob
 import os
 import logging
 import shutil
 import requests
-from botocore.exceptions import ClientError
 
 logging.basicConfig(level=logging.INFO)
 
 class StationUploader:
     def __init__(self):
-        self.bucket = 'ctt-motus-development'
-        self.base_key = 'v2/ctt/tag-data-v2'
-        self.sg_base_key = 'v2/ctt/sg-data-v2'
+        self.endpoint = "http://station.internetofwildlife.com/station/v2/upload"
         self.sg_file_dir = os.path.join('/', 'data', 'SGdata')
         self.rotated_dir = os.path.join('/', 'data', 'rotated')
         self.base_uploaded_dir = os.path.join('/', 'data', 'uploaded')
@@ -26,13 +22,6 @@ class StationUploader:
         self.internet_check_ping_count = 3
         self.ensureDirs()
         self.station_id = self.getStationId()
-        with open ('/etc/ctt/ctt.conf', 'r') as inFile:
-            data = json.loads(inFile.read())
-            self.s3 = boto3.client(
-                's3',
-                aws_access_key_id=data['accessKeyId'],
-                aws_secret_access_key=data['secretAccessKey']
-            )
 
     def getStationId(self):
         with open('/etc/ctt/station-id', 'r') as inFile:
@@ -60,23 +49,25 @@ class StationUploader:
                 return True
         return False
 
-    def uploadFileAws(self, fileuri, key):
-        print('about to upload file', fileuri, 'to key', key)
-        try:
-            response = self.s3.upload_file(fileuri, self.bucket, key)
-        except Exception as err:
-            logging.error(err)
-            return False
-        return True
-
     def uploadFile(self, fileuri, filetype):
-        basename = os.path.basename(fileuri)
+        endpoint = self.endpoint
         if filetype == 'sg':
-            basekey = self.sg_base_key
+            endpoint = '{}/sg'.format(endpoint)
         else:
-            basekey = self.base_key
-        key = '{}/{}/{}'.format(basekey, self.station_id, basename)
-        return self.uploadFileAws(fileuri, key)
+            endpoint = '{}/ctt'.format(endpoint)
+        with open(fileuri, 'rb') as inFile:
+            contents = inFile.read()
+            headers = {
+                'filename': os.path.basename(fileuri),
+                'Content-Type': 'application/octet-stream'
+            }
+            response = requests.post(endpoint, headers=headers, data=contents)
+            # check for a 204 response code for validation
+            if response.status_code == 204:
+                return True
+            else:
+                print('invalid server response code {}'.format(response.status_code))
+        return False
 
     def rotateUploaded(self, fileuri, filetype):
         basename = os.path.basename(fileuri)
@@ -88,7 +79,7 @@ class StationUploader:
         uploaded_dir = os.path.join(uploaded_dir, now.strftime('%Y-%m-%d'))
         os.makedirs(uploaded_dir, exist_ok=True)
         newuri = os.path.join(uploaded_dir, basename)
-        print('moving file', fileuri, 'to', newuri)
+        print('moving file', os.path.basename(fileuri), 'to', newuri)
         shutil.move(fileuri, newuri)
 
     def uploadAllCttFiles(self):
