@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO)
 
 class StationUploader:
     def __init__(self):
-        self.endpoint = "http://station.internetofwildlife.com/station/v2/upload"
+        self.endpoint = "https://station.internetofwildlife.com/station/v2/upload"
         self.sg_file_dir = os.path.join('/', 'data', 'SGdata')
         self.rotated_dir = os.path.join('/', 'data', 'rotated')
         self.base_uploaded_dir = os.path.join('/', 'data', 'uploaded')

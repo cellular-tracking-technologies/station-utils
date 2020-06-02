@@ -5,7 +5,7 @@ import datetime
 class StationUpdater:
     def __init__(self):
         self.station_id = self.getStationId()
-        self.update_endpoint = 'https://account.celltracktech.com/station/v1/update/'
+        self.update_endpoint = 'https://station.internetofwildlife.com/station/v1/update'
         self.tmp_file = '/tmp/station-update.sh'
         self.update_log = '/data/update-{}.log'.format(self.station_id)
 
