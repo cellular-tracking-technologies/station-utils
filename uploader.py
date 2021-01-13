@@ -23,6 +23,10 @@ class StationUploader:
         self.ensureDirs()
         self.station_id = self.getStationId()
 
+        self.TIMEOUT = 5
+        self.MAX_ATTEMPTS = 3
+        self.attempt = 0
+
     def getStationId(self):
         with open('/etc/ctt/station-id', 'r') as inFile:
             return inFile.read().strip()
@@ -49,6 +53,27 @@ class StationUploader:
                 return True
         return False
 
+    def post(self, endpoint, headers, data):
+        self.attempt += 1
+        try:
+            response = requests.post(endpoint, headers=headers, data=data, timeout=self.TIMEOUT)
+            # check for a 204 response code for validation
+            if response.status_code == 204:
+                print('SUCCESS after {} tries'.format(self.attempt))
+                self.attempt = 0
+                return True
+            print('invalid status reponse code', response.status_code)
+            return False
+
+        except Exception as err:
+            print(err)
+            print('failed {} of {} attempts'.format(self.attempt, self.MAX_ATTEMPTS))
+            if self.attempt >= self.MAX_ATTEMPTS:
+                print('exceeding attempts to upload file')
+                return False
+            else:
+                return self.post(endpoint, headers, data)
+
     def uploadFile(self, fileuri, filetype):
         endpoint = self.endpoint
         if filetype == 'sg':
@@ -61,13 +86,7 @@ class StationUploader:
                 'filename': os.path.basename(fileuri),
                 'Content-Type': 'application/octet-stream'
             }
-            response = requests.post(endpoint, headers=headers, data=contents)
-            # check for a 204 response code for validation
-            if response.status_code == 204:
-                return True
-            else:
-                print('invalid server response code {}'.format(response.status_code))
-        return False
+            return self.post(endpoint, headers=headers, data=contents)
 
     def rotateUploaded(self, fileuri, filetype):
         basename = os.path.basename(fileuri)
@@ -111,7 +130,7 @@ class StationUploader:
                     res = self.uploadFile(fileuri=filename, filetype='sg')
                     if res is False:
                         print('problem uploading files - aborting upload')
-                        return false
+                        return False
                     self.rotateUploaded(fileuri=filename, filetype='sg')
             return True
         else:
