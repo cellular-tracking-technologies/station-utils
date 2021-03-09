@@ -23,7 +23,7 @@ class StationUploader:
         self.ensureDirs()
         self.station_id = self.getStationId()
 
-        self.TIMEOUT = 5
+        self.TIMEOUT = 20
         self.MAX_ATTEMPTS = 3
         self.attempt = 0
 
@@ -137,8 +137,11 @@ class StationUploader:
             print('no internet connection - not uploading anything')
         return False
 
-if __name__ == '__main__':
+def go():
     uploader = StationUploader()
     res = uploader.uploadAllCttFiles()
     if res is True:
         uploader.uploadAllSgFiles()
+
+if __name__ == '__main__':
+    go()
